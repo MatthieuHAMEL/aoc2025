@@ -30,10 +30,6 @@ def isInvalidID_method2(num: int):
             break
     return bInvalid
 
-        
-isInvalidID_method2(7693676936)        
-
-
 myRanges = s.split(',')
 for i in range(len(myRanges)):
     myRanges[i] = myRanges[i].split('-') 
@@ -41,14 +37,10 @@ for i in range(len(myRanges)):
 result_1, result_2 = 0, 0
 for start, end in myRanges:
     for number in range(int(start), int(end)+1):
-        b1 = False
         if isInvalidID_method1(number):
             result_1 += number
-            b1 = True
         if isInvalidID_method2(number):
             result_2 += number
-        else:
-            if (b1):
-                print("hi")
+
 print(result_1)
 print(result_2)
