@@ -26,9 +26,9 @@ size_t part1_algo(ssize_t read, char* line) {
 
 size_t part2_algo(ssize_t read, char* line) {
   // The principle is still the same with 12 numbers. We look first for
-  // the greatest digit that has at least 11 other characters behind it.
+  // the greatest digit that has at least 11 other characters after it.
   // Then the greatest digit that is after the first one, and has at least
-  // 10 other characters behind it...
+  // 10 other characters after it...
   int lbound = -1;
   uint8_t d[12] = {0};
   for (int k = 0; k < 12; k++) { // Let's find the kth digit
