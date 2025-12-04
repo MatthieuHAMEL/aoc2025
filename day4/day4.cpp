@@ -2,7 +2,7 @@ import std;
 using namespace std;
 
 auto main() -> int {
-  constexpr auto directions = std::to_array<pair<int8_t, int8_t>>({
+  constexpr auto directions = std::to_array<pair<int, int>>({
     {-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}
   });
   vector<string> matrix;
@@ -20,10 +20,10 @@ auto main() -> int {
   }
 
   auto const nb_rows = matrix.size();
-  auto const nb_cols = matrix[0].size();
+  auto const nb_cols = (nb_rows) ? matrix[0].size() : 0;
   size_t result = 0;
-  for (auto i = 0; i < nb_rows; ++i) {
-    for (auto j = 0; j < nb_cols; ++j) {
+  for (size_t i = 0; i < nb_rows; ++i) {
+    for (size_t j = 0; j < nb_cols; ++j) {
       if (matrix[i][j] != '@') continue;
 
       uint8_t nb_neighbors = 0;
@@ -37,6 +37,9 @@ auto main() -> int {
 
         if (matrix[idx_row][idx_col] == '@') {
           ++nb_neighbors;
+          if (nb_neighbors == 4) { // no need to continue
+            break;
+          }
         }
       }
 
