@@ -1,5 +1,3 @@
-with open('input.txt') as f: s = f.read()
-
 """ Checks if the number is made of some sequence of 
 digits repeated twice, e.g. 22 or 12341234 or 1188511885 """
 def isInvalidID_method1(num: int):
@@ -7,29 +5,25 @@ def isInvalidID_method1(num: int):
     n = len(str_num)
     return n % 2 == 0 and str_num[0:n//2] == str_num[n//2:n]
 
-""" "Naive" version """
-def isInvalidID_method2(num: int):
-    str_num = str(num)
-    n = len(str_num)
-    bInvalid = False
+"""Checks if the number is made of some sequence of 
+digits repeated twice or more, e.g. 22 or 12341234123412341234 or 1188511885"""
+def isInvalidID_method2(num: int) -> bool:
+    s = str(num)
+    n = len(s)
     if n <= 1:
-        return bInvalid
-    for sz in range(1, 1 + n//2): # the candidate pattern cannot be bigger!
-        pattern = str_num[0:sz]
-        # Is that candidate pattern OK?
-        if n % len(pattern) != 0: # no!
+        return False    
+    for sz in range(1, n//2 + 1):
+        if n % sz != 0: # the string cannot be divided in k patterns of size sz
             continue
-        
-        bInvalid = True # consider it is True and test it:
-        for i in range(len(pattern), n, len(pattern)):
-            # e.g. if pattern length is 2, i goes from index 2 to n with steps of 2.
-            if pattern != str_num[i:i+len(pattern)]:
-                bInvalid = False
-                break # let's take a bigger pattern, this one didn't match!
-        if bInvalid: # Found!
-            break
-    return bInvalid
+        pattern = s[:sz]
+        if pattern * (n//sz) == s:
+            return True
+    return False
 
+###################################################
+with open('input.txt') as f: s = f.read()
+
+# Construct a list of pairs representing the ranges
 myRanges = s.split(',')
 for i in range(len(myRanges)):
     myRanges[i] = myRanges[i].split('-') 
