@@ -20,11 +20,11 @@ bool isInRanges(ulong ingredient_id, ulong[2][] ranges) {
 // Then the solution becomes as simple as adding up every range size.
 ulong countFreshIngredients(ulong[2][] ranges)
 {
-  // Sort by start, then merge range i+1 with range i
+  // Sort by lower bound value:
   sort!((a, b) => a[0] < b[0])(ranges);
 
   // The idea is : start with the first range's lowest bound, which is the overall lowest number
-  // we can encounter thanks to the sort. Then grow the interval while there are overlapping ranges.
+  // I can encounter thanks to the sort. Then absorb the following ranges if they overlap with mine.
   // When I encounter a range that doesn't overlap I know that I'm done with my current growing range.
   ulong result;
   ulong[2] cur = ranges[0]; // current merged interval
