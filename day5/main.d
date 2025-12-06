@@ -12,10 +12,41 @@ bool isInRanges(ulong ingredient_id, ulong[2][] ranges) {
   return false;
 }
 
+// For part 2
+// The ranges overlap. I don't want to build a map (int => bool) "has my int been counted yet"?
+// given the data, indeed, the total number of integers in those ranges is huge, while there is
+// a reasonably low amount of ranges.
+// So the best solution I see is to build another ranges array without any overlapping
+// Then the solution becomes as simple as adding up every range size.
+ulong countFreshIngredients(ulong[2][] ranges)
+{
+  // Sort by start, then merge range i+1 with range i
+  sort!((a, b) => a[0] < b[0])(ranges);
+
+  // The idea is : start with the first range's lowest bound, which is the overall lowest number
+  // we can encounter thanks to the sort. Then grow the interval while there are overlapping ranges.
+  // When I encounter a range that doesn't overlap I know that I'm done with my current growing range.
+  ulong result;
+  ulong[2] cur = ranges[0]; // current merged interval
+  foreach (i; 1 .. ranges.length) {
+    auto rg = ranges[i];
+    if (rg[0] <= cur[1] + 1) {
+      if (rg[1] > cur[1]) { // Extend current range if ncessary
+        cur[1] = rg[1];
+      }
+    } else { // Disjoint: close current and start new. 
+      result += cur[1] - cur[0] + 1; // The sort gives the guarantee that nothing will intersect with [cur0, cur1]
+      cur = rg;
+    }
+  }
+  // The last one:
+  result += cur[1] - cur[0] + 1;
+  return result;
+}
+
 void main()
 {
-  auto file = File("input.txt");
-  auto lines = file.byLine();
+  auto lines = File("input.txt").byLine();
 
   // 1st loop : parse the "fresh ingredient IDs" ranges
   ulong[2][] ranges; // "dynamic array of N arrays of 2". Yes, it's the opposite than in C (?!)
@@ -40,4 +71,7 @@ void main()
   }
 
   writefln("%u", result);
+
+  ulong result_part_2 = countFreshIngredients(ranges);
+  writefln("%u", result_part_2);
 }
