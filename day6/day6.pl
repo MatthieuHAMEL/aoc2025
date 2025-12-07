@@ -6,7 +6,7 @@ my @lines = <STDIN>; # perl day6.pl < input.txt
 chomp @lines;
 
 # last line contains the operators
-my $op_line = $lines[$#lines]; # I don't pop it because I need it for part 2.
+my $op_line = $lines[$#lines]; # I coul pop it but I need it for part 2.
 my @ops = split(' ', $op_line);
 
 ################# PART ONE #####################
