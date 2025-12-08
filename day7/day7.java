@@ -4,42 +4,24 @@ import java.util.Scanner;
 import java.util.ArrayList;
 import java.util.Stack;
 
-// Of course Java doesn't have a tree structure! .....
-class HamelTree<T> { 
-  public HamelTree(T data) {
-    _data = data;
-    _children = new ArrayList<HamelTree<T>>();
+// For part 1
+class BeamCoordinate {
+  public BeamCoordinate(int i, int j) {
+    this.i = i;
+    this.j = j;
   }
-  public HamelTree<T> addChild(T child_data) {
-    // Use the private ctor to increase the depth
-    var child = new HamelTree<T>(child_data, _depth+1);
-    _children.add(child);
-    return child;
-  }
+  public int i;
+  public int j;
+}
 
-  public T getData() {
-    return _data;
+// For part 2
+class BeamData {
+  public BeamData(int iIdx, long iNbPaths) {
+    index = iIdx;
+    nb_paths = iNbPaths;
   }
-  
-  public HamelTree<T> getChild(int idx) {
-    return _children.get(idx);
-  }
-
-  public int getNumberOfChildren() {
-    return _children.size();
-  }
-
-  public int getDepth() {
-    return _depth;
-  }
-
-  private HamelTree(T data, int depth) {
-    this(data);
-    _depth = depth;
-  }
-  private T _data;
-  private ArrayList<HamelTree<T>> _children;
-  private int _depth;
+  public int index; // relatively to the line it is on...
+  public long nb_paths; // Number of possible paths from the beginning, to that beam
 }
 
 class day7 {
@@ -58,55 +40,111 @@ class day7 {
     // Get the char matrix from the file
     var data_in = new char[line_count][]; // Strings are immutable and I want to mark visited cells...
     scanner = new Scanner(file);
-    int i = 0;
-    while (scanner.hasNextLine()) {
-      data_in[i++] = scanner.nextLine().toCharArray();
+    {
+      int i = 0;
+      while (scanner.hasNextLine()) {
+        data_in[i++] = scanner.nextLine().toCharArray();
+      }
     }
-
-    // Store the index relatively to the line (the line index itself is the depth)
-    // /!\ don't use Arrays.toString which gives a "pretty print" version of the char array!
-    // Ideally I shouldn't use strings at all - if only there were some kind of indexOf on arrays
-    // But solutions to that (rather simple) problem are "use C#", "use guava", or "write your own loop".
-    // https://stackoverflow.com/questions/4962361/where-is-javas-array-indexof#19084357
-    // Java is such a depressing language!
-    var root_tree = new HamelTree<Integer>(String.valueOf(data_in[0]).indexOf('S'));
-    var nodes = new Stack<HamelTree<Integer>>();
-    nodes.push(root_tree);
-
-    // Build the tree starting with the root
+    
+    int indexOfStart = 0;
+    while (data_in[0][indexOfStart] != 'S') { // There is no indexOf() on java arrays ...
+      indexOfStart++;
+    }
+    var nodes = new Stack<BeamCoordinate>();
+    nodes.push(new BeamCoordinate(0, indexOfStart));
     int nb_split = 0;
     while (!nodes.isEmpty()) {
       var node = nodes.pop();
       
       // Look at the cell below the current index
-      int y_next = node.getDepth() + 1; // the next line index
-      int x = node.getData(); // the horizontal index of the current node
-      if (y_next == line_count) {
-        continue; // Last line reached => nothing to do
+      int i_next = node.i + 1; // the next line index
+      if (i_next == line_count) { // Last line reached => nothing to do
+        continue; 
       }
-      String next_line = String.valueOf(data_in[y_next]);
-      if (next_line.charAt(x) == '.') {
-        // The tachyon doesn't split, I create a child at depth+1
-        // (the depth is set by the HamelTree), and I reference it in the stack.
-        nodes.push(node.addChild(x)); // same horizontal index!
-        data_in[y_next][x] = '|';
+  
+      int j = node.j;
+      if (data_in[i_next][j] == '.') {
+        // The tachyon doesn't split. Push the below cell in the stack
+        nodes.push(new BeamCoordinate(i_next, j)); // same horizontal index!
+        data_in[i_next][j] = '|';
       }
-      else if (next_line.charAt(x) == '|') { // already visited
+      else if (data_in[i_next][j] == '|') { // already visited
         continue;
       }
       else { // '^' : split the tachyon left & right
         nb_split++;
-        if (x - 1 > 0 && next_line.charAt(x-1) == '.') {
-          nodes.push(node.addChild(x-1));
-          data_in[y_next][x-1] = '|';
+        if (j - 1 >= 0 && data_in[i_next][j-1] == '.') {
+          nodes.push(new BeamCoordinate(i_next, j-1));
+          data_in[i_next][j-1] = '|';
         }
-        if (x + 1 < next_line.length() && next_line.charAt(x+1) == '.') {
-          nodes.push(node.addChild(x+1));
-          data_in[y_next][x+1] = '|';
+        if (j + 1 < data_in[i_next].length && data_in[i_next][j+1] == '.') {
+          nodes.push(new BeamCoordinate(i_next, j+1));
+          data_in[i_next][j+1] = '|';
         }
       }
     }
     
     System.out.printf("%d\n", nb_split);
+
+    // Part 2 ////////////////////////////////////////////////////
+    // Take the "fully splitted" grid from the assignment example:
+    // .......S.......
+    // .......|.......  
+    // ......|^|......  
+    // ......|.|......  
+    // .....|^|^|.....  
+    // .....|.|.|.....  
+    // ....|^|^|^|....  
+    // ....|.|.|.|....  
+    // ...|^|^|||^|...  
+    // ...|.|.|||.|...
+    // ..|^|^|||^|^|..  
+    // ..|.|.|||.|.|..
+    // .|^|||^||.||^|.
+    // .|.|||.||.||.|.
+    // |^|^|^|^|^|||^|
+    // |.|.|.|.|.|||.|
+    // I write the "possible" coordinates for each line as a list of lists of indexes:
+    // [7], [6, 8], [6, 8], [5, 7, 9], [5, 7, 9], [4, 6, 8, 10], ...]
+    // For each Ki_j (beam at line i, index j), how many ways are there to reach it?
+    // I build the corresponding array 
+    // [7], [6, 8], [6, 8], [5, 7, 9], [5, 7, 9], [4, 6, 8, 10], ...]
+    // [1], [1, 1], [1, 1], [1, 2, 1], [1, 2, 1], [1, 3, 3, 1], ...]
+    // The solution is the sum of the last line.
+    
+    // Let's compute that list of lists first, starting from the result of part 1.
+    // I don't use an int[][] because I don't know the size of each line
+    var every_beam = new ArrayList<ArrayList<BeamData>>(line_count);
+    for (int iHateJava = 0; iHateJava < line_count; iHateJava++) { every_beam.add(new ArrayList<BeamData>()); }
+
+    every_beam.get(0).add(new BeamData(indexOfStart, 1)); // index of 'S'; there is 1 way to go to it
+    for (int i = 1; i < line_count; i++) {
+      // every_beam[i] == the list of indexes of every '|' at line i
+      for (int index = 0; index < data_in[i].length; index++) {
+        if (data_in[i][index] == '|') {
+          every_beam.get(i).add(new BeamData(index, 0)); // for now there is 0 way to go to that new beam
+        }
+      }
+
+      // Now let's compute the number of possible paths with respect to the step i-1
+      for (BeamData prev: every_beam.get(i-1)) { // A beam from the previous line
+        for (BeamData cur: every_beam.get(i)) {  // A beam from the current line
+          // If is possible to go from prev to cur (directly or because of a split)
+          if (prev.index == cur.index || (Math.abs(prev.index - cur.index) == 1 && data_in[i][prev.index] == '^')) {
+            // The "prev.nb_paths" ways to go to prev are propagated to cur
+            cur.nb_paths += prev.nb_paths;
+          }
+        }
+      }      
+    }
+
+    // If there are K beams on the last line and (N1, ... Nk) ways to reach them respectively,
+    // the answer (total number of paths in the grid) is N1 + N2 + ... + Nk
+    long result = 0;
+    for (BeamData lastLineBeam: every_beam.get(line_count-1)) {
+      result += lastLineBeam.nb_paths;
+    }
+    System.out.printf("%d\n", result);
   }
 }
