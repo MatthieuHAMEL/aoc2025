@@ -7,4 +7,5 @@ Advent Of Code 2025 with a different programming language every day :
 - Day 5 in D
 - Day 6 in Perl
 - Day 7 in Java
+- Day 8 in Rust
 ...
