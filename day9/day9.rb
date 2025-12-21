@@ -323,7 +323,7 @@ def check_green(occupancy, xi, yi, x2i, y2i)
     return false unless occupancy[ymin][x] && occupancy[ymax][x]
   end
   
-  (ymin..ymax).each do |x|
+  (ymin..ymax).each do |y|
     return false unless occupancy[y][xmin] && occupancy[y][xmax]
   end
   true
@@ -345,8 +345,11 @@ for i in 0...n
     xi, yi = x_to_i[x], y_to_i[y]
     x2i, y2i = x_to_i[x2], y_to_i[y2]
     next unless check_green(occupancy, xi, yi, x2i, y2i)
-    
-    area = ij_area if ij_area > area
+
+    if ij_area > area then
+      puts "(3) area #{ij_area} for #{i}, #{j}"
+      area = ij_area
+    end
   end
 end
 
