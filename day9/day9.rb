@@ -80,11 +80,9 @@ def end_reached(xr, yr, dangling, curIdx, endIdx, limit, dir)
   if curIdx == endIdx then # it's over anyway.
     return true
   end
-
   if !limit then # if there is no given limit it means we must continue until endIdx
     return false
   end
-
   if dangling then # if there is a limit and if there is a cell to fill that we didn't see, it's not done
     return false
   end
@@ -100,14 +98,8 @@ def end_reached(xr, yr, dangling, curIdx, endIdx, limit, dir)
   end
 end
 
-def treshold(xstart, ystart, dir) # the threshold that, if crossed, invalidates the rectangle
-  if dir == PathDir::LeftToRight or dir == PathDir::RightToLeft then
-    ystart
-  else # dir == PathDir::TopToBottom or dir == PathDir::BottomToTop
-    xstart
-  end
-end
-
+# Return the next coordinate of the edge that is "dangling", i.e.
+# it may not be reached by the path since that path traverses the rectangle.
 def traverses_rectangle(xr, yr, treshold, dir)
   if dir == PathDir::LeftToRight and yr > treshold then
     [xr+1, treshold]
@@ -210,10 +202,153 @@ for i in 0...n
       next if dangling
     end
   
-
     puts "Area: #{ij_area}, for i, j  #{i}, #{j}"
     area = ij_area if ij_area > area
   end
 end
 
+puts area
+
+
+# 3rd approach, compressing the grid 
+xs = coos.map(&:first).uniq.sort
+ys = coos.map(&:last).uniq.sort
+
+x_to_i = {}
+xs.each_with_index { |x, i| x_to_i[x] = i }
+
+y_to_i = {}
+ys.each_with_index { |y, i| y_to_i[y] = i }
+
+width  = xs.length
+height = ys.length
+
+# the compressed grid
+occupancy = Array.new(height) { Array.new(width, false) }
+
+# grid mapping: grid[y_idx][x_idx] = [x, y] or nil
+grid = Array.new(height) { Array.new(width, nil) }
+
+for i in 0...n
+  x, y = coos[i]
+  xi, yi = x_to_i[x], y_to_i[y]
+  
+  occupancy[yi][xi] = 1
+  grid[yi][xi] = [x, y] # mapping back to original coords
+  
+  x2, y2 = coos[(i+1) % n]
+  x2i, y2i = x_to_i[x2], y_to_i[y2]
+  if xi == x2i then
+    bmin, bmax = [yi, y2i].minmax
+    for yti in bmin+1...bmax
+      occupancy[yti][xi] = 2
+    end
+  elsif yi == y2i then
+    bmin, bmax = [xi, x2i].minmax
+    for xti in bmin+1...bmax
+      occupancy[yi][xti] = 2
+    end    
+  end
+end
+
+# Naive filling of the shape. First locate an interior cell
+interior = false
+ifl, jfl = 0, 0
+h, w = occupancy.length, occupancy[0].length
+done = false
+for i in 0...h
+  break if done
+  for j in 0...w
+    next if !occupancy[i][j]
+
+    # if occupancy[i][j] then I hit a wall
+    if j+1 < w && !occupancy[i][j+1] # I made it past the wall
+      ifl, jfl = i, j+1
+      puts "found interior cell at #{ifl}, #{jfl}"
+      done = true
+      break
+    else break # Try on another line
+    end
+  end
+end
+
+# Then flood fill
+queue = [[ifl, jfl]]
+while !queue.empty? do
+  i, j = queue.pop
+  occupancy[i][j] = 3
+  # collect neighbors
+  if i+1 < h && !occupancy[i+1][j] then queue.append([i+1, j]) end
+  if j+1 < w && !occupancy[i][j+1] then queue.append([i, j+1]) end
+  if i-1 >= 0 && !occupancy[i-1][j] then queue.append([i-1, j]) end
+  if j-1 >= 0 && !occupancy[i][j-1] then queue.append([i, j-1]) end
+end
+    
+
+# Write ASCII compressed grid, this is for debugging purposes
+File.open("compressed_grid.txt", "w") do |f|
+  occupancy.each_with_index do |row, i|
+    f.print row.map { |cell|
+      if cell == 1 then "#"
+      elsif cell == 2 then "X"
+      elsif cell == 3 then "o"
+      else "."
+      end
+    }.join
+
+    # at the end of the line write in order the real coordinates...
+    row.each_with_index { |cell, j|
+      if cell == 1 then
+        f.print grid[i][j], " "
+      end
+    }
+    
+    f.print "\n"
+  end
+end
+
+puts "Read #{coos.length} points"
+puts "Compressed to #{width}x#{height} grid"
+
+# grid[yi][xi] -> [original_x, original_y] or nil
+# puts grid[0][0].inspect
+
+# now bruteforce the result
+
+def check_green(occupancy, xi, yi, x2i, y2i)
+  xmin, xmax = [xi, x2i].minmax
+  ymin, ymax = [yi, y2i].minmax
+
+  (xmin..xmax).each do |x|
+    return false unless occupancy[ymin][x] && occupancy[ymax][x]
+  end
+  
+  (ymin..ymax).each do |x|
+    return false unless occupancy[y][xmin] && occupancy[y][xmax]
+  end
+  true
+end
+
+area = 0
+for i in 0...n
+  for j in i+1...n
+    x, y = coos[i]
+    x2, y2 = coos[j]
+    ij_area = ((x - x2).abs + 1) * ((y - y2).abs + 1)
+    next if ij_area < area
+    
+    if j == i+1 then # the rectangle is a straight line -> it is valid!
+      area = ij_area if ij_area > area
+      next
+    end
+
+    xi, yi = x_to_i[x], y_to_i[y]
+    x2i, y2i = x_to_i[x2], y_to_i[y2]
+    next unless check_green(occupancy, xi, yi, x2i, y2i)
+    
+    area = ij_area if ij_area > area
+  end
+end
+
+puts "3rd approach"
 puts area
